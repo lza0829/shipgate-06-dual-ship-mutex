@@ -10,14 +10,22 @@ router = APIRouter(tags=["总览"])
 def overview():
     with db() as conn:
         counts = {}
-        for name in ("待入闸", "已入闸", "晋升中", "已放行", "回滚中", "已回滚", "已关闭"):
+        for name in ("待入闸", "排队中", "已入闸", "晋升中", "已放行", "回滚中", "已回滚", "已关闭"):
             counts[name] = conn.execute(
                 "SELECT COUNT(*) AS c FROM releases WHERE status=?", (name,)
             ).fetchone()["c"]
+        # 在途格以应用占用位为准：app_locks 有几行就是几笔在途，同应用不可能出现双在途
         active = rows_to_list(
             conn.execute(
                 RELEASE_SELECT
-                + " WHERE r.status IN ('已入闸','晋升中','已放行','回滚中') ORDER BY r.id DESC"
+                + " WHERE r.id IN (SELECT release_id FROM app_locks) ORDER BY r.id DESC"
+            ).fetchall()
+        )
+        # 排队格可核可见：排队不是已入闸，不进在途、不可晋升
+        queued = rows_to_list(
+            conn.execute(
+                RELEASE_SELECT
+                + " WHERE r.status='排队中' ORDER BY r.queued_at, r.id"
             ).fetchall()
         )
         versions = rows_to_list(
@@ -44,4 +52,4 @@ def overview():
                 """
             ).fetchall()
         )
-        return {"分布": counts, "在途": active, "环境版本": versions, "实例": health}
+        return {"分布": counts, "在途": active, "排队": queued, "环境版本": versions, "实例": health}

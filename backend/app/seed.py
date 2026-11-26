@@ -73,6 +73,10 @@ def seed_if_empty() -> None:
             ),
         )
         rid = conn.execute("SELECT id FROM releases ORDER BY id DESC LIMIT 1").fetchone()["id"]
+        conn.execute(
+            "INSERT INTO app_locks(app_id, release_id, since) VALUES (?, ?, ?)",
+            (app, rid, now),
+        )
         upsert_instance(conn, app, envs["测"], "1.3.0", "探针绿", rid)
         set_app_env_version(conn, app, envs["测"], "1.3.0")
         audit(conn, "系统", None, "种子初始化", "发版闸")

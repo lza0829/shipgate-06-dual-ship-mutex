@@ -1,12 +1,13 @@
 from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from app.db import db, row_to_dict
+from app.db import row_to_dict, write_tx
 from app.services.common import (
     active_rollback_window,
     audit,
     get_release,
     now_str,
+    release_app_lock,
     set_app_env_version,
     upsert_instance,
 )
@@ -21,7 +22,7 @@ class RollbackIn(BaseModel):
 
 @router.post("/发版单/{release_id}/回滚")
 def rollback(release_id: int, body: RollbackIn):
-    with db() as conn:
+    with write_tx() as conn:
         r = conn.execute("SELECT * FROM releases WHERE id=?", (release_id,)).fetchone()
         if not r:
             raise HTTPException(404, "发版单不存在")
@@ -49,5 +50,8 @@ def rollback(release_id: int, body: RollbackIn):
             """,
             (now, r["app_id"], r["current_env_id"], body.目标版本, release_id),
         )
+        # 终态释放应用占用位，并唤醒本应用排队单（排队中 -> 待入闸）
+        release_app_lock(conn, r["app_id"])
         audit(conn, "回滚", release_id, f"回滚到{body.目标版本}", body.备注)
-        return row_to_dict(get_release(conn, release_id))
+        result = row_to_dict(get_release(conn, release_id))
+    return result

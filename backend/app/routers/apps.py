@@ -18,7 +18,17 @@ def list_apps():
     with db() as conn:
         return rows_to_list(
             conn.execute(
-                "SELECT id AS 编号, name AS 名称, owner AS 负责人, status AS 状态 FROM apps ORDER BY id"
+                """
+                SELECT a.id AS 编号, a.name AS 名称, a.owner AS 负责人, a.status AS 状态,
+                       l.release_id AS 占用发版单编号,
+                       (SELECT serial FROM releases WHERE id=l.release_id) AS 占用发版单,
+                       l.since AS 占用起始,
+                       (SELECT COUNT(*) FROM releases q
+                         WHERE q.app_id=a.id AND q.status='排队中') AS 排队单数
+                FROM apps a
+                LEFT JOIN app_locks l ON l.app_id=a.id
+                ORDER BY a.id
+                """
             ).fetchall()
         )
 

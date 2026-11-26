@@ -17,13 +17,25 @@ export default function Overview() {
           <div className="stat" key={k}><div className="n">{v}</div><div className="l">{k}</div></div>
         ))}
       </div>
-      <h2>在途发版</h2>
+      <h2>在途发版（应用占用位）</h2>
       <div className="table-wrap">
         <table>
-          <thead><tr><th>发版单号</th><th>应用</th><th>目标版本</th><th>状态</th><th>当前环境</th><th>流水线</th></tr></thead>
+          <thead><tr><th>发版单号</th><th>应用</th><th>目标版本</th><th>状态</th><th>当前环境</th><th>流水线</th><th>占用</th></tr></thead>
           <tbody>
             {(data.在途 || []).map((r) => (
-              <tr key={r.编号}><td>{r.发版单号}</td><td>{r.应用}</td><td>{r.目标版本}</td><td>{r.状态}</td><td>{r.当前环境 || '-'}</td><td>{r.流水线}</td></tr>
+              <tr key={r.编号}><td>{r.发版单号}</td><td>{r.应用}</td><td>{r.目标版本}</td><td>{r.状态}</td><td>{r.当前环境 || '-'}</td><td>{r.流水线}</td><td><span className="lock-on">占用中</span></td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <h2>排队发版（未入闸，不可晋升）</h2>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>发版单号</th><th>应用</th><th>目标版本</th><th>状态</th><th>排队时间</th><th>流水线</th></tr></thead>
+          <tbody>
+            {(data.排队 || []).length === 0 && <tr><td colSpan="6" className="sub">无排队单</td></tr>}
+            {(data.排队 || []).map((r) => (
+              <tr key={r.编号} className="row-queued"><td>{r.发版单号}</td><td>{r.应用}</td><td>{r.目标版本}</td><td><span className="badge badge-queued">{r.状态}</span></td><td>{r.排队时间 || '-'}</td><td>{r.流水线}</td></tr>
             ))}
           </tbody>
         </table>

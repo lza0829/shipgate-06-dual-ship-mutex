@@ -18,6 +18,24 @@ export default function Reconcile() {
         ))}
         <div className="stat"><div className="n">{data.晋升事件数}</div><div className="l">晋升事件数</div></div>
       </div>
+      <h2>互斥占用重放</h2>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>应用</th><th>在途单数</th><th>占用位数</th><th>在途单号们</th><th>判定</th></tr></thead>
+          <tbody>
+            {(data.占用位明细 || []).map((r) => {
+              const bad = r.在途单数 !== r.占用位数 || r.在途单数 > 1
+              return (
+                <tr key={r.应用编号} className={bad ? 'row-bad' : ''}>
+                  <td>{r.应用}</td><td>{r.在途单数}</td><td>{r.占用位数}</td>
+                  <td>{r.在途单号们 || '-'}</td>
+                  <td>{bad ? <span className="badge badge-bad">互斥违例</span> : <span className="badge badge-idle">一致</span>}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
       <h2>名册与实例</h2>
       <div className="table-wrap">
         <table>

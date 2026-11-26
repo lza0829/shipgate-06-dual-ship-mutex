@@ -1,15 +1,17 @@
 from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from app.db import db, row_to_dict
+from app.db import row_to_dict, write_tx
 from app.services.common import (
     active_release_window,
+    assert_not_queued,
     audit,
     env_by_code,
     get_release,
     get_setting,
     now_str,
     ordered_envs,
+    reconcile_app_lock,
     set_app_env_version,
     upsert_instance,
 )
@@ -24,12 +26,19 @@ class PromoteIn(BaseModel):
 
 @router.post("/发版单/{release_id}/晋升")
 def promote(release_id: int, body: PromoteIn):
-    with db() as conn:
+    with write_tx() as conn:
         r = conn.execute("SELECT * FROM releases WHERE id=?", (release_id,)).fetchone()
         if not r:
             raise HTTPException(404, "发版单不存在")
+        # 排队单被误点晋升：臂一硬阻断，排队态不装成已入闸
+        if r["status"] == "排队中":
+            assert_not_queued(conn, release_id)
         if r["status"] not in ("已入闸", "晋升中"):
             raise HTTPException(400, "当前状态不可晋升")
+        # 重放占用位：只有持有应用占用的唯一活跃单可晋升；半截双挂在此收口
+        holder = reconcile_app_lock(conn, r["app_id"])
+        if not holder or holder["release_id"] != release_id:
+            raise HTTPException(409, "本单未持有应用占用位，禁止晋升")
         to_env = env_by_code(conn, body.目标环境)
         envs = ordered_envs(conn)
         codes = [e["code"] for e in envs]

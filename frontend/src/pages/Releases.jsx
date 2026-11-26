@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api'
 
+const QUEUED = '排队中'
+const ACTIVE = ['已入闸', '晋升中', '已放行', '回滚中']
+
 export default function Releases() {
   const [rows, setRows] = useState([])
   const [apps, setApps] = useState([])
@@ -39,6 +42,20 @@ export default function Releases() {
       load()
     } catch (e) { setErr(e.message) }
   }
+  const enqueue = async (id) => {
+    setErr('')
+    try {
+      await api(`/发版单/${id}/排队`, { method: 'POST', body: '{}' })
+      load()
+    } catch (e) { setErr(e.message) }
+  }
+  const close = async (id) => {
+    setErr('')
+    try {
+      await api(`/发版单/${id}/关闭`, { method: 'POST', body: '{}' })
+      load()
+    } catch (e) { setErr(e.message) }
+  }
   return (
     <div className="panel">
       <h2>发版单</h2>
@@ -57,16 +74,42 @@ export default function Releases() {
       <div className="table-wrap">
         <table>
           <thead>
-            <tr><th>发版单号</th><th>应用</th><th>目标版本</th><th>状态</th><th>流水线</th><th>当前环境</th><th>操作</th></tr>
+            <tr><th>发版单号</th><th>应用</th><th>目标版本</th><th>状态</th><th>流水线</th><th>当前环境</th><th>应用占用</th><th>操作</th></tr>
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.编号}>
-                <td>{r.发版单号}</td><td>{r.应用}</td><td>{r.目标版本}</td><td>{r.状态}</td><td>{r.流水线}</td><td>{r.当前环境 || '-'}</td>
+              <tr key={r.编号} className={r.状态 === QUEUED ? 'row-queued' : ''}>
+                <td>{r.发版单号}</td>
+                <td>{r.应用}</td>
+                <td>{r.目标版本}</td>
+                <td>
+                  <span className={`badge badge-${r.状态 === QUEUED ? 'queued' : ACTIVE.includes(r.状态) ? 'active' : 'idle'}`}>{r.状态}</span>
+                  {r.排队时间 && <div className="sub">排队于 {r.排队时间}</div>}
+                </td>
+                <td>{r.流水线}</td>
+                <td>{r.当前环境 || '-'}</td>
+                <td>{r.占用应用 ? <span className="lock-on">占用中</span> : <span className="lock-off">-</span>}</td>
                 <td>
                   <button type="button" className="secondary" onClick={() => pipeline(r.编号, '绿')}>流水线绿</button>{' '}
                   <button type="button" className="danger" onClick={() => pipeline(r.编号, '红')}>流水线红</button>{' '}
-                  <button type="button" onClick={() => admit(r.编号)}>入闸</button>
+                  <button
+                    type="button"
+                    onClick={() => admit(r.编号)}
+                    disabled={r.状态 !== '待入闸'}
+                    title={r.状态 === QUEUED ? '排队中，唤醒后可入闸' : ''}
+                  >入闸</button>{' '}
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => enqueue(r.编号)}
+                    disabled={r.状态 !== '待入闸'}
+                  >排队</button>{' '}
+                  <button
+                    type="button"
+                    className="danger"
+                    onClick={() => close(r.编号)}
+                    disabled={['已回滚', '已关闭'].includes(r.状态)}
+                  >关闭</button>
                 </td>
               </tr>
             ))}

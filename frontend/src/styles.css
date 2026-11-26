@@ -245,3 +245,23 @@ tr:hover td { background: #f2f4f7; }
   }
   .nav { flex-direction: row; flex-wrap: wrap; }
 }
+
+/* 入闸互斥：占用位/排队态/违例标识 */
+.badge {
+  display: inline-block;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-active { background: #e6f4ea; color: #1e7d3a; border: 1px solid #b7dfc4; }
+.badge-queued { background: #fff4e0; color: #9a6200; border: 1px solid #f0d29a; }
+.badge-idle { background: #eef0f3; color: #555d6b; border: 1px solid #d6dae1; }
+.badge-bad { background: #fde8e8; color: #b42318; border: 1px solid #f3b4b4; }
+.lock-on { color: #1e7d3a; font-weight: 700; }
+.lock-off { color: #8a919c; }
+.row-queued td { background: #fffaf0; }
+.row-bad td { background: #fdf2f2; }
+.sub { font-size: 0.78rem; color: #8a919c; margin-top: 0.15rem; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }

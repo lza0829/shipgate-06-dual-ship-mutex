@@ -27,10 +27,18 @@ export default function Apps() {
       </div>
       <div className="table-wrap">
         <table>
-          <thead><tr><th>编号</th><th>名称</th><th>负责人</th><th>状态</th></tr></thead>
+          <thead><tr><th>编号</th><th>名称</th><th>负责人</th><th>状态</th><th>占用发版单</th><th>占用起始</th><th>排队单数</th></tr></thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.编号}><td>{r.编号}</td><td>{r.名称}</td><td>{r.负责人}</td><td>{r.状态}</td></tr>
+              <tr key={r.编号}>
+                <td>{r.编号}</td>
+                <td>{r.名称}</td>
+                <td>{r.负责人}</td>
+                <td>{r.状态}</td>
+                <td>{r.占用发版单 ? <span className="lock-on">{r.占用发版单}</span> : <span className="lock-off">空闲</span>}</td>
+                <td>{r.占用起始 || '-'}</td>
+                <td>{r.排队单数 > 0 ? <span className="badge badge-queued">{r.排队单数}</span> : 0}</td>
+              </tr>
             ))}
           </tbody>
         </table>

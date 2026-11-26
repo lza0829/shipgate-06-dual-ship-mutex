@@ -8,7 +8,8 @@ export default function Promote() {
   const [err, setErr] = useState('')
   const load = async () => {
     const all = await api('/发版单')
-    const active = all.filter((r) => ['已入闸', '晋升中'].includes(r.状态))
+    // 排队中不是已入闸，不可晋升，不进晋升选择
+    const active = all.filter((r) => ['已入闸', '晋升中'].includes(r.状态) && r.占用应用)
     setRows(active)
     if (!rid && active[0]) setRid(String(active[0].编号))
   }
